@@ -115,3 +115,32 @@ func (t *Nullable[T]) UnmarshalJSON(data []byte) error {
 	t.Set(v)
 	return nil
 }
+
+func (t Nullable[T]) MarshalText() ([]byte, error) {
+	// if field was specified, and `null`, marshal it
+	if t.IsNull() {
+		return []byte(""), nil
+	}
+
+	// if field was unspecified, and `omitempty` is set on the field's tags, `json.Marshal` will omit this field
+
+	// otherwise: we have a value, so marshal it
+	return json.Marshal(t[true])
+}
+
+func (t *Nullable[T]) UnmarshalText(data []byte) error {
+	// if field is unspecified, UnmarshalJSON won't be called
+
+	// if field is specified, and `null`
+	if bytes.Equal(data, []byte("")) {
+		t.SetNull()
+		return nil
+	}
+	// otherwise, we have an actual value, so parse it
+	var v T
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	t.Set(v)
+	return nil
+}
